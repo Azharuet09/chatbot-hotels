@@ -1,0 +1,161 @@
+from fastapi import FastAPI, UploadFile, File, Form
+import mysql.connector
+from utilities.main import *
+from utilities.aws_helpers import *
+from utilities.cleanup import *
+from utilities.ml_service_helpers import call_video_talking_api
+#from celery import Celery
+
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+region_name = config.get('aws_credentials', 'region_name')
+elevenlabs_key = config.get('eleven_labs', 'elevenlabs_key')
+hostname = config.get('mysql_credentials', 'hostname')
+username = config.get('mysql_credentials', 'username')
+password = config.get('mysql_credentials', 'password')
+db_name = config.get('mysql_credentials', 'database_name')
+port = config.get('mysql_credentials', 'port')
+#
+
+
+app = FastAPI()
+
+language_mapping = {
+    "arb":1,
+    "ca-ES":2,
+    "yue-CN":3,
+    "cmn-CN":4,
+    "da-DK":5,
+    "nl-BE":6,
+    "nl-NL":7,
+    "en-US":8,
+    "fi-FI":9,
+    "fr-FR":10,
+    "hi-IN":11,
+    "de-DE":12,
+    "de-AT":13,
+    "is-IS":14,
+    "it-IT":15,
+    "ja-JP":16,
+    "ko-KR":17,
+    "nb-NO":18,
+    "pl-PL":19,
+    "pt-BR":20,
+    "ro-RO":21,
+    "ru-RU":22,
+    "es-US":23,
+    "sv-SE":24,
+    "tr-TR":25,
+    "cy-GB":26,
+    "hr": 27,
+    "cs": 28,
+    "bg": 29,
+    "fil": 30,
+    "el": 31,
+    "id": 32,
+    "ms": 33,
+    "pt": 34,
+    "sk": 35,
+    "ta": 36,
+    "uk": 37
+}
+
+
+@app.get("/")
+async def root():
+    #hello()
+    return {"message": "Hello World"}
+
+@app.post("/transcribe")
+def process_audio(video_id: str = Form(...) , languages: str = Form(...),capion_enable: bool=Form(False), video_talking_enble: bool = Form(False)):
+    languages = languages.split(",")
+    # print('----------------languages------------------',languages)
+    # print(type(languages))
+    
+    # Initialize loading bar
+    loading_bar = ["separate_audio_and_save_to_s3", "transcribe_speech", "download_json_file", "read_json_file", "split_audio", "call_video_talking_api", "cleanup_local_files"]
+
+    # Create a function to send loading bar messages to the front end
+    def send_loading_bar_message(message):
+        # In a real web application, you would send this message to the front end.
+        # For now, we'll just print it.
+        print("Loading Bar:", message)
+
+    def update_loading_bar(func_name):
+        current_function = loading_bar.pop(0)  # Remove the first item
+        loading_bar.insert(0, func_name)  # Insert the current function name at the beginning
+        send_loading_bar_message(current_function)
+
+        # print("Loading Bar:", current_function)
+
+    connection = mysql.connector.connect(
+        host=hostname,
+        user=username,
+        password=password,
+        port=port,
+        database=db_name
+    )
+    cursor = connection.cursor()
+
+    for tlang in languages:
+        language_id = language_mapping[tlang]
+        update_query = "UPDATE `lingopal-v2`.`Video_Language` SET status = 0 WHERE video_id = %s and language_id = %s ;"
+        cursor.execute(update_query, (video_id, language_id))
+        connection.commit()
+    cursor.close()
+    connection.close()
+
+    update_loading_bar("separate_audio_and_save_to_s3")
+    audio_file_name = separate_audio_and_save_to_s3(video_id)
+    
+    audio_file = 'output/' + str(audio_file_name)
+
+    update_loading_bar("transcribe_speech")
+    job_name = transcribe_speech(audio_file)
+    json_file_key='output/'+job_name+'.json'
+
+    time.sleep(30)
+    update_loading_bar("download_json_file")
+    download_json_file(json_file_key=json_file_key)
+
+    input_file = str(job_name)+ '.wav'
+    output_prefix = "output_segment"
+    file_path = str(job_name)+'.json'
+
+    update_loading_bar("read_json_file")
+    json_data = read_json_file(file_path)
+ 
+    timestamp=[]
+    for i,a in enumerate(json_data["results"]['speaker_labels']['segments']):
+        a=float(json_data["results"]['speaker_labels']['segments'][i]["start_time"])
+        b=float(json_data["results"]['speaker_labels']['segments'][i]["end_time"])
+        speaker = json_data["results"]['speaker_labels']['segments'][i]['speaker_label']
+        timestamp.append((a*1000,b*1000,speaker))
+    time_stamps = timestamp
+
+    update_loading_bar("split_audio")
+    split_audio(input_file, output_prefix, time_stamps, job_name, video_id, languages, elevenlabs_key, audio_file_name,capion_enable)
+
+    for tlang in languages:
+        if video_talking_enble:
+            update_loading_bar("call_video_talking_api")
+            call_video_talking_api(f'{video_id}.mp4', job_name+'.wav', tlang, video_id, video_talking_enble )
+
+    update_loading_bar("cleanup_local_files")        
+    cleanup_local_files([job_name+'.json', job_name+'.wav', f'{video_id}.mp4'])
+    shutil.rmtree(video_id)
+
+    return {"Message":"Audio processing completed!"}
+
+
+# add new transcription and regenerate video
+
+# return transcription formatted
+
+
+if __name__ == "__main__":
+    import uvicorn
+    print("--------------------- run ------------------- app")
+    uvicorn.run("application:app", host='127.0.0.1', port=4000)

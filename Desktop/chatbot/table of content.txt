@@ -1,0 +1,76 @@
+Chapter 1: Introduction
+1.1 Background and Context
+Introduction to the hospitality industry
+The need for automation in the hotel booking process
+1.2 Problem Statement
+Challenges in hotel booking and price calculation
+1.3 Objectives
+To develop an automated hotel chatbot
+To calculate the total price based on various attributes
+1.4 Scope and Limitations
+What the chatbot can and cannot do
+1.5 Significance of the Study
+How the chatbot can benefit the hospitality industry
+1.6 Thesis Organization
+Overview of the chapters in the thesis
+Chapter 2: Literature Review
+2.1 Hotel Booking Systems
+Overview of existing hotel booking systems
+2.2 Chatbots in Hospitality
+Role of chatbots in improving customer service
+2.3 Natural Language Processing (NLP)
+Explanation of NLP and its importance in chatbots
+2.4 Pricing Strategies in Hospitality
+Different pricing models used in the industry
+2.5 Related Technologies
+Overview of HTML, CSS, JavaScript for GUI development
+Chapter 3: Methodology
+3.1 System Architecture
+Description of the overall system design
+3.2 Data Collection and Preprocessing
+How data was collected and prepared for use in the chatbot
+3.3 Chatbot Development
+Technical details of building the chatbot
+3.4 GUI Development
+Explanation of the graphical user interface
+3.5 Algorithms for Price Calculation
+How the chatbot calculates the total price
+Chapter 4: Implementation
+4.1 Data Integration
+How the hotel data was integrated into the chatbot
+4.2 Chatbot Features
+Details of the chatbot's capabilities
+4.3 GUI Features
+Description of the user interface and its functionalities
+4.4 Testing and Validation
+How the chatbot was tested to ensure accuracy
+4.5 Challenges and Solutions
+Overcoming challenges encountered during implementation
+Chapter 5: Results and Discussion
+5.1 Performance Evaluation
+Evaluation of the chatbot's performance in real-world scenarios
+5.2 User Feedback
+Gathering and analyzing user feedback
+5.3 Discussion of Findings
+Interpretation of results and their implications
+5.4 Comparison with Existing Systems
+How the chatbot compares to other hotel booking systems
+Chapter 6: Conclusion and Future Work
+6.1 Summary of Findings
+Recap of key findings and achievements
+6.2 Contributions and Implications
+Discussing the contributions of the chatbot to the hospitality industry
+6.3 Future Work
+Suggestions for further improvements and enhancements
+6.4 Conclusion
+Final remarks and the significance of the project
+References
+List of all sources cited in the thesis
+
+
+abstract
+literature review (30 papers from some samples which is given)
+methodology ( divide into 2 parts) 
+1 data pr different ML technique
+2 manually 1000 sentences extract, then apply oversampling
+
